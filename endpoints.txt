@@ -1,0 +1,36 @@
+Base URL: https://github.com/abdullahwins
+
+//admin
+
+router.get("/admin/find/:id", authenticateToken, getOneAdmin);
+router.get("/admin/delete/:id", authenticateToken, deleteAdminById);
+router.get("/admin", authenticateToken, getAllAdmins);
+router.get("/admin/types/:typeName", authenticateToken, getAdminsByType);
+router.post("/admin/add", authenticateToken, addOneAdmin); = { firstName, lastName, email, password, permissions, status }
+router.post("/admin/register", RegisterAdmin); = { firstName, lastName, email, password, permissions, status }
+router.post("/admin/login", LoginAdmin);
+router.patch("/admin/edit/:id", authenticateToken, updateAdminById);
+router.post("/admin/reset", sendPasswordResetLink); = { email }
+router.patch("/admin/reset", updateAdminPasswordByEmail); = { email, newPassword }
+router.patch("/admin/resetpassword/:email", updateAdminPasswordByOldPassword); = { oldPassword, newPassword }
+router.delete("/admin/delete/:id", deleteAdminById); {_id}
+
+//stripe
+
+router.get("/stripe", getAllWhitelistedCustomers);
+router.get("/stripe/find/:email", checkWhitelistedCustomersByEmail);
+router.post("/stripe/paymentsuccessful",express.raw({ type: "application/json" }),handleStripeWebhookOnSuccess);
+
+//users
+
+router.get("/users/find/:id", getOneUser);
+router.get("/users/types/:typeName", getUsersByType);
+router.get("/users", getAllUsers);
+router.post("/users/add", addOneUser); = { firstName, lastName, email, password }
+router.patch("/users/edit/:id", updateUserById);
+router.post("/users/reset", sendPasswordResetLink); = { email }
+router.patch("/users/reset", updateUserPasswordByEmail); = { email, newPassword }
+router.patch("/users/resetpassword/:email", updateUserPasswordByOldPassword); = { oldPassword, newPassword }
+router.post("/users/login", LoginUser);
+router.post("/users/register", RegisterUser); = { firstName, lastName, email, password }
+router.get("/users/delete/:id", deleteUserById);
