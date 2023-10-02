@@ -10,6 +10,9 @@ const {
   stripesCollection,
 } = require("../../config/database/db");
 const { uploadFiles } = require("../utilities/uploadFile");
+//prisma
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
 //login
 const LoginUser = async (req, res) => {
@@ -71,6 +74,21 @@ const getAllUsers = async (req, res) => {
     const users = await cursor.toArray();
     console.log(`Found ${users.length} users`);
     res.send(users);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+};
+//get all User
+const getAllUserss = async (req, res) => {
+  try {
+    const allUsers = await prisma.user.findMany({
+      include: {
+        posts: true,
+        profile: true,
+      },
+    });
+    res.send(console.dir(allUsers, { depth: null }));
   } catch (err) {
     console.error(err);
     res.status(500).send("Server Error");
@@ -281,6 +299,7 @@ const deleteUserById = async (req, res) => {
 module.exports = {
   getOneUser,
   getAllUsers,
+  getAllUserss,
   getUsersByType,
   addOneUser,
   LoginUser,

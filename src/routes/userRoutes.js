@@ -3,6 +3,7 @@ const router = require("express").Router();
 const {
   getOneUser,
   getAllUsers,
+  getAllUserss,
   getUsersByType,
   addOneUser,
   LoginUser,
@@ -16,6 +17,7 @@ const {
 
 router.get("/users/find/:id", getOneUser);
 router.get("/users", getAllUsers);
+router.get("/userss", getAllUserss);
 router.get("/users/types/:typeName", getUsersByType);
 router.post("/users/add", addOneUser);
 router.post("/users/login", LoginUser);
