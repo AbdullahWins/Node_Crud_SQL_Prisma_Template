@@ -7,27 +7,42 @@ const { adminsCollection } = require("../../config/database/db");
 const AdminModel = require("../models/AdminModel");
 const { SendEmail } = require("../services/email/SendEmail");
 const { uploadFiles } = require("../utilities/uploadFile");
+//prisma
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
 // login
 const LoginAdmin = async (req, res) => {
   try {
     const data = JSON.parse(req?.body?.data);
     const { email, password } = data;
-    const admin = await AdminModel.findByEmail(email);
-    console.log(admin);
+
+    // Find the admin by email using Prisma
+    const admin = await prisma.admin.findUnique({
+      where: {
+        email: email,
+      },
+    });
+
     if (!admin) {
-      return res.status(404).json({ error: "admin not found" });
+      return res.status(404).json({ error: "Admin not found" });
     }
-    const passwordMatch = await bcrypt.compare(password, admin?.password);
+
+    // Compare the password using bcrypt
+    const passwordMatch = await bcrypt.compare(password, admin.password);
+
     if (!passwordMatch) {
       return res.status(401).json({ error: "Invalid password" });
     }
+
+    // Create a JWT token for authentication
     const expiresIn = "7d";
     const token = jwt.sign(
-      { adminId: admin?.email },
+      { adminId: admin.email },
       process.env.JWT_TOKEN_SECRET_KEY,
       { expiresIn }
     );
+
     res.json({ token, admin });
   } catch (error) {
     console.error(error);
@@ -39,30 +54,34 @@ const LoginAdmin = async (req, res) => {
 const RegisterAdmin = async (req, res) => {
   try {
     const data = JSON.parse(req?.body?.data);
-    const {
-      firstName,
-      lastName,
-      email,
-      password,
-      permissions,
-      status,
-      timestamp,
-    } = data;
-    const existingAdminCheck = await AdminModel.findByEmail(email);
-    if (existingAdminCheck) {
+    const { name, email, password, permissions, status } = data;
+
+    // Check if an admin with the same email already exists
+    const existingAdmin = await prisma.admin.findUnique({
+      where: {
+        email: email,
+      },
+    });
+
+    if (existingAdmin) {
       return res.status(409).json({ error: "Admin already exists" });
     }
-    // create a new Admin
+
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newAdmin = await AdminModel.createAdmin(
-      firstName,
-      lastName,
-      email,
-      hashedPassword,
-      permissions,
-      status,
-      timestamp
-    );
+
+    // Create a new admin using Prisma
+    const newAdmin = await prisma.admin.create({
+      data: {
+        name: name,
+        email: email,
+        password: hashedPassword,
+        permissions: permissions,
+        status: status,
+      },
+    });
+
+    console.log(newAdmin);
     res.status(201).json(newAdmin);
   } catch (error) {
     console.error(error);
@@ -73,9 +92,8 @@ const RegisterAdmin = async (req, res) => {
 // get all Admin
 const getAllAdmins = async (req, res) => {
   try {
-    const query = {};
-    const cursor = adminsCollection.find(query);
-    const admins = await cursor.toArray();
+    // Retrieve all admins using Prisma
+    const admins = await prisma.admin.findMany();
     console.log(`Found ${admins.length} admins`);
     res.send(admins);
   } catch (err) {
@@ -88,9 +106,14 @@ const getAllAdmins = async (req, res) => {
 const getAdminsByType = async (req, res) => {
   try {
     const adminTypeName = req.params.typeName;
-    const admins = await adminsCollection
-      .find({ adminType: adminTypeName })
-      .toArray();
+
+    // Retrieve admins by type using Prisma
+    const admins = await prisma.admin.findMany({
+      where: {
+        type: adminTypeName,
+      },
+    });
+
     if (admins.length === 0) {
       res.status(404).send("No admins found for the specified type");
     } else {
@@ -121,41 +144,6 @@ const getOneAdmin = async (req, res) => {
   }
 };
 
-// add new Admin
-const addOneAdmin = async (req, res) => {
-  const data = JSON.parse(req?.body?.data);
-  const {
-    firstName,
-    lastName,
-    email,
-    password,
-    permissions,
-    status,
-    timestamp,
-  } = data;
-  try {
-    const existingAdminCheck = await AdminModel.findByEmail(email);
-    if (existingAdminCheck) {
-      return res.status(409).json({ error: "admin already exists" });
-    }
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newAdmin = await AdminModel.createAdmin(
-      firstName,
-      lastName,
-      email,
-      hashedPassword,
-      permissions,
-      status,
-      timestamp
-    );
-    res.status(201).json(newAdmin);
-    console.log(newAdmin);
-    console.log(newAdmin);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Failed to create new admin");
-  }
-};
 
 // update one Admin
 const updateAdminById = async (req, res) => {
@@ -293,7 +281,6 @@ module.exports = {
   getOneAdmin,
   getAdminsByType,
   getAllAdmins,
-  addOneAdmin,
   updateAdminById,
   sendPasswordResetLink,
   updateAdminPasswordByEmail,

@@ -1,20 +1,22 @@
 // Controllers/falajController.js
-
-const { ObjectId } = require("mongodb");
-const { girlFriendsCollection } = require("../../config/database/db");
-const { Timekoto } = require("timekoto");
 const { uploadFile } = require("../utilities/uploadFile");
+//prisma
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
 //get all GirlFriend
 const getAllGirlFriends = async (req, res) => {
   try {
-    const query = {};
-    const cursor = girlFriendsCollection.find(query);
-    const falajes = await cursor.toArray();
-    if (falajes.length === 0) {
+    // Query all entries from the GirlFriend table
+    const girlFriends = await prisma.girlFriend.findMany();
+
+    // Check if there are no entries, and if so, send an empty array
+    if (girlFriends.length === 0) {
       return res.send([]);
     }
-    res.send(falajes);
+
+    // Send the retrieved entries as a response
+    res.send(girlFriends);
   } catch (err) {
     console.error(err);
     res.status(500).send({ error: "Server Error" });
@@ -24,15 +26,18 @@ const getAllGirlFriends = async (req, res) => {
 //get single GirlFriend
 const getOneGirlFriend = async (req, res) => {
   try {
-    const falajId = req.params.id;
-    const falaj = await girlFriendsCollection.findOne({
-      _id: new ObjectId(falajId),
+    const gfId = parseInt(req.params.id);
+    const girlfriend = await prisma.girlFriend.findUnique({
+      where: {
+        id: gfId,
+      },
     });
-    if (!falaj) {
-      res.status(404).send({ error: "falaj rent not found" });
+
+    if (!girlfriend) {
+      res.status(404).send({ error: "Girlfriend not found" });
     } else {
-      res.send(falaj);
-      console.log(falaj);
+      console.log(girlfriend);
+      res.send(girlfriend);
     }
   } catch (err) {
     console.error(err);
@@ -44,15 +49,17 @@ const getOneGirlFriend = async (req, res) => {
 const getGirlFriendsByType = async (req, res) => {
   try {
     const type = req.params.type;
-    const response = girlFriendsCollection.find({
-      type: type,
+    const girlFriends = await prisma.girlFriend.findMany({
+      where: {
+        type: type,
+      },
     });
-    const GirlFriendDetails = await response.toArray();
-    if (!GirlFriendDetails) {
-      res.status(404).send({ error: "gf not found on this type" });
+
+    if (girlFriends.length === 0) {
+      res.status(404).send({ error: "No girlfriends found with this type" });
     } else {
-      console.log(GirlFriendDetails);
-      res.send(GirlFriendDetails);
+      console.log(girlFriends);
+      res.send(girlFriends);
     }
   } catch (err) {
     console.error(err);
@@ -79,7 +86,6 @@ const addOneGirlFriend = async (req, res) => {
       cons,
       type,
       status,
-      timestamp: Timekoto(),
     };
 
     //upload file
@@ -89,13 +95,14 @@ const addOneGirlFriend = async (req, res) => {
       console.log(image);
       formattedData = { ...formattedData, image };
     }
+
     //store data on database
-    const result = await girlFriendsCollection.insertOne(formattedData);
-    if (result?.acknowledged === false) {
+    const result = await prisma.girlFriend.create({ data: formattedData });
+    if (result?.id === null) {
       return res.status(500).send({ error: "Failed to add gf" });
     }
-    res.send(formattedData);
-    console.log(formattedData);
+    console.log(result);
+    res.send(result);
   } catch (err) {
     console.error(err);
     res.status(500).send({ error: "Failed to add gf" });
@@ -105,13 +112,12 @@ const addOneGirlFriend = async (req, res) => {
 //update one GirlFriend
 const updateGirlFriendById = async (req, res) => {
   try {
-    const id = req.params.id;
+    const id = parseInt(req.params.id); // Assuming the ID is an integer, adjust as needed
     const { file } = req;
-    const query = { _id: new ObjectId(id) };
     const data = JSON.parse(req?.body?.data);
     let formattedData = { ...data };
 
-    //upload file
+    // Upload file
     if (file) {
       const folderName = "GirlFriends";
       const image = await uploadFile(file, folderName);
@@ -123,36 +129,63 @@ const updateGirlFriendById = async (req, res) => {
       return res.status(400).send({ error: "Incomplete Inputs" });
     }
 
-    const result = await girlFriendsCollection.updateOne(query, {
-      $set: formattedData,
+    // Check if the GirlFriend record with the specified ID exists
+    const existingGirlFriend = await prisma.girlFriend.findUnique({
+      where: {
+        id: id,
+      },
     });
-    if (result?.modifiedCount === 0) {
-      return res.status(500).send({ error: "No modifications were made" });
+
+    if (!existingGirlFriend) {
+      return res.status(404).send({ error: "GirlFriend not found" });
     }
-    res.send(formattedData);
+
+    // Update the GirlFriend record
+    const updatedGirlFriend = await prisma.girlFriend.update({
+      where: {
+        id: id,
+      },
+      data: formattedData,
+    });
+
+    res.send(updatedGirlFriend);
   } catch (err) {
     console.error(err);
-    res.status(500).send({ error: "Failed to update gf" });
+    res.status(500).send({ error: "Failed to update girlfriend" });
   }
 };
 
 //delete one GirlFriend
 const deleteOneGirlFriendById = async (req, res) => {
   try {
-    const id = req.params.id;
-    const query = { _id: new ObjectId(id) };
-    const result = await girlFriendsCollection.deleteOne(query);
-    console.log(result);
-    if (result?.deletedCount === 0) {
-      console.log("no gf found with this id:", id);
-      res.send({ error: "no gf found with this id!" });
-    } else {
-      console.log("gf deleted:", id);
-      res.status(200).send(result);
+    const id = parseInt(req.params.id); // Assuming the ID is an integer, adjust as needed
+
+    // Check if the GirlFriend record with the specified ID exists
+    const existingGirlFriend = await prisma.girlFriend.findUnique({
+      where: {
+        id: id,
+      },
+    });
+
+    if (!existingGirlFriend) {
+      console.log("No girlfriend found with this ID:", id);
+      return res
+        .status(404)
+        .send({ error: "No girlfriend found with this ID" });
     }
+
+    // Delete the GirlFriend record
+    const deletedGirlFriend = await prisma.girlFriend.delete({
+      where: {
+        id: id,
+      },
+    });
+
+    console.log("Girlfriend deleted:", id);
+    res.status(200).send(deletedGirlFriend);
   } catch (err) {
     console.error(err);
-    res.status(500).send({ error: "Failed to delete falaj rent" });
+    res.status(500).send({ error: "Failed to delete girlfriend" });
   }
 };
 

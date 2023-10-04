@@ -10,6 +10,29 @@ datasource db {
   url      = "mysql://root:admin@localhost:3306/testdb"
 }
 
+model GirlFriend {
+  id Int      @id @default(autoincrement())
+  name String
+  image String?
+  age Int
+  location String
+  pros String
+  cons String
+  type String
+  status String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Admin {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  permissions Json
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
 model Post {
   id        Int      @id @default(autoincrement())
@@ -32,6 +55,7 @@ model Profile {
 model User {
   id      Int      @id @default(autoincrement())
   email   String   @unique
+  password String
   name    String?
   posts   Post[]
   profile Profile?

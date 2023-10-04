@@ -5,7 +5,6 @@ const {
   getOneAdmin,
   getAllAdmins,
   getAdminsByType,
-  addOneAdmin,
   LoginAdmin,
   RegisterAdmin,
   updateAdminById,
@@ -15,17 +14,16 @@ const {
   deleteAdminById,
 } = require("../controllers/adminController");
 
-router.get("/admin/find/:id", authenticateToken, getOneAdmin);
-router.get("/admin/delete/:id", authenticateToken, deleteAdminById);
-router.get("/admin", authenticateToken, getAllAdmins);
-router.get("/admin/types/:typeName", authenticateToken, getAdminsByType);
-router.post("/admin/add", authenticateToken, addOneAdmin);
-router.post("/admin/register", RegisterAdmin);
-router.post("/admin/login", LoginAdmin);
-router.patch("/admin/edit/:id", authenticateToken, updateAdminById);
-router.post("/admin/reset", sendPasswordResetLink);
-router.patch("/admin/resetpassword/:email", updateAdminPasswordByOldPassword);
-router.patch("/admin/reset", updateAdminPasswordByEmail);
-router.delete("/admin/delete/:id", deleteAdminById);
+router.get("/admins/find/:id", authenticateToken, getOneAdmin);
+router.get("/admins/delete/:id", authenticateToken, deleteAdminById);
+router.get("/admins", authenticateToken, getAllAdmins);
+router.get("/admins/types/:typeName", authenticateToken, getAdminsByType);
+router.post("/admins/register", RegisterAdmin);
+router.post("/admins/login", LoginAdmin);
+router.patch("/admins/edit/:id", authenticateToken, updateAdminById);
+router.post("/admins/reset", sendPasswordResetLink);
+router.patch("/admins/resetpassword/:email", updateAdminPasswordByOldPassword);
+router.patch("/admins/reset", updateAdminPasswordByEmail);
+router.delete("/admins/delete/:id", deleteAdminById);
 
 module.exports = router;
