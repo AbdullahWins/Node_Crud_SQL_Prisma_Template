@@ -30,6 +30,7 @@ model Admin {
   password  String
   permissions Json
   status    String
+  resetToken String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
